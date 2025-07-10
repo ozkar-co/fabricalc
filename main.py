@@ -88,11 +88,22 @@ class FabriCalc:
         weight_entry = ttk.Entry(input_frame, textvariable=self.weight_var)
         weight_entry.grid(row=1, column=1, sticky='ew', padx=5, pady=2)
         
-        # Print time input
-        ttk.Label(input_frame, text="Tiempo de impresión (horas):").grid(row=2, column=0, sticky='w', pady=2)
-        self.print_time_var = tk.StringVar()
-        print_time_entry = ttk.Entry(input_frame, textvariable=self.print_time_var)
-        print_time_entry.grid(row=2, column=1, sticky='ew', padx=5, pady=2)
+        # Print time input - Hours and Minutes
+        ttk.Label(input_frame, text="Tiempo de impresión:").grid(row=2, column=0, sticky='w', pady=2)
+        
+        time_frame = ttk.Frame(input_frame)
+        time_frame.grid(row=2, column=1, sticky='ew', padx=5, pady=2)
+        
+        self.print_hours_var = tk.StringVar(value="0")
+        self.print_minutes_var = tk.StringVar(value="0")
+        
+        ttk.Label(time_frame, text="Horas:").pack(side='left')
+        hours_entry = ttk.Entry(time_frame, textvariable=self.print_hours_var, width=8)
+        hours_entry.pack(side='left', padx=(5,10))
+        
+        ttk.Label(time_frame, text="Minutos:").pack(side='left')
+        minutes_entry = ttk.Entry(time_frame, textvariable=self.print_minutes_var, width=8)
+        minutes_entry.pack(side='left', padx=(5,0))
         
         # Shipping type
         ttk.Label(input_frame, text="Tipo de envío:").grid(row=3, column=0, sticky='w', pady=2)
@@ -308,7 +319,12 @@ class FabriCalc:
             # Get input values
             material = self.material_var.get()
             weight = float(self.weight_var.get()) / 1000  # Convert to kg
-            print_time = float(self.print_time_var.get())
+            
+            # Calculate print time from hours and minutes
+            print_hours = float(self.print_hours_var.get())
+            print_minutes = float(self.print_minutes_var.get())
+            print_time = print_hours + (print_minutes / 60)
+            
             shipping_type = self.shipping_var.get()
             profit_percent = float(self.profit_var.get()) / 100
             post_time = float(self.post_time_var.get()) / 60  # Convert to hours
