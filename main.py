@@ -369,7 +369,7 @@ class FabriCalc:
             material_cost = weight * waste_factor * self.config["materiales"][material]
             electricity_cost = total_print_time * self.config["consumo_kw_por_hora"] * self.config["electricidad_kwh"]
             depreciation_cost = (total_print_time / self.config["vida_util_horas"]) * self.config["precio_impresora"]
-            labor_cost = ((print_time/2) + post_time) * self.config["precio_hora_trabajo"]
+            labor_cost = ((print_time/4) + post_time) * self.config["precio_hora_trabajo"]
             
             # Shipping cost
             if shipping_type == "Personal":

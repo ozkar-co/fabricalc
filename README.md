@@ -30,7 +30,7 @@ Edita el archivo `config.json` para ajustar tus valores:
   "materiales": {
     "PLA Wood": 150000,
     "PETG": 120000,
-    "PLA+": 110000
+    "PLA+": 90000
   },
   "electricidad_kwh": 968,
   "consumo_kw_por_hora": 0.5,
@@ -38,37 +38,91 @@ Edita el archivo `config.json` para ajustar tus valores:
   "vida_util_horas": 7000,
   "envio_local": 6000,
   "envio_nacional": 12000,
-  "precio_hora_trabajo": 12500
+  "precio_hora_trabajo": 6471,
+  "factor_desperdicio": 100,
+  "tiempo_calentamiento": 10
 }
 ```
 
-- Los precios de material son por kilogramo (COP).
-- El consumo de energía es estimado (kW por hora).
-- Los valores de envío son referenciales y puedes cambiarlos.
+### Parámetros de Configuración:
+
+- **materiales**: Precios por kilogramo (COP) para cada tipo de material
+- **electricidad_kwh**: Precio del kilovatio-hora en COP
+- **consumo_kw_por_hora**: Consumo estimado de la impresora en kW/h
+- **precio_impresora**: Costo total de la impresora en COP
+- **vida_util_horas**: Horas de vida útil estimadas de la impresora
+- **envio_local**: Costo de envío local en COP
+- **envio_nacional**: Costo de envío nacional en COP
+- **precio_hora_trabajo**: Tarifa por hora de trabajo en COP
+- **factor_desperdicio**: Porcentaje de desperdicio de material para cubrir posibles reimpresiones o fallos
+- **tiempo_calentamiento**: Tiempo de calentamiento aproximado en minutos
 
 ---
 
 ## Variables de Entrada
 
 - **Material**: Selecciona el tipo de material desde la lista disponible
-- **Peso de la pieza**: Peso del objeto en gramos
-- **Tiempo de impresión**: Duración de la impresión en horas
+- **Peso de la pieza**: Peso del objeto en gramos (por defecto: 10g)
+- **Tiempo de impresión**: Duración de la impresión en horas y minutos
 - **Tipo de envío**: 
   - Personal (sin costo)
   - Local (costo configurable)
   - Nacional (costo configurable)
 - **Porcentaje de ganancia**: Por defecto 40%
-- **Tiempo de postprocesado**: Por defecto 20 minutos
+- **Tiempo de postprocesado**: Por defecto 60 minutos
 
 ## Uso
 
 1. Selecciona el material desde la lista.
 2. Introduce el peso del objeto (en gramos).
-3. Introduce el tiempo de impresión (en horas).
+3. Introduce el tiempo de impresión (en horas y minutos).
 4. Selecciona el tipo de envío (personal, local o nacional).
 5. Ajusta el porcentaje de ganancia deseado (por defecto 40%).
-6. Configura el tiempo de postprocesado (por defecto 20 minutos).
+6. Configura el tiempo de postprocesado (por defecto 60 minutos).
 7. Visualiza el costo total y el precio final sugerido.
+
+---
+
+## Fórmulas de Cálculo
+
+### 1. **Costo de Material**
+```
+Costo Material = Peso (kg) × Factor Desperdicio × Precio Material (COP/kg)
+```
+- **Factor Desperdicio**: `1 + (porcentaje_desperdicio / 100)`
+- Ejemplo: 100% de desperdicio = factor 2.0 (duplica el costo)
+
+### 2. **Costo de Electricidad**
+```
+Costo Electricidad = Tiempo Total × Consumo (kW/h) × Precio kWh (COP)
+```
+- **Tiempo Total**: Tiempo de impresión + Tiempo de calentamiento
+- Incluye el tiempo de calentamiento configurado automáticamente
+
+### 3. **Uso de la Máquina**
+```
+Costo Máquina = (Tiempo Total / Vida Útil) × Precio Impresora
+```
+- Considera la depreciación basada en el uso real de la máquina
+- Incluye tiempo de calentamiento en el cálculo
+
+### 4. **Costo de Trabajo**
+```
+Costo Trabajo = ((Tiempo Impresión / 4) + Tiempo Post-procesado) × Tarifa Hora
+```
+- **Tiempo Impresión / 4**: Se divide entre 4 porque no se está pendiente todo el tiempo de la impresión, solo se supervisa por ratos
+- **Tiempo Post-procesado**: Tiempo completo de trabajo manual (limpieza, acabados, etc.)
+
+### 5. **Costo de Envío**
+- **Personal**: $0
+- **Local**: Costo configurado
+- **Nacional**: Costo configurado
+
+### 6. **Precio Final**
+```
+Precio Final = Costo Total × (1 + Porcentaje Ganancia)
+```
+- **Costo Total**: Suma de todos los costos anteriores
 
 ---
 
