@@ -134,4 +134,40 @@ Este proyecto está licenciado bajo la MIT License.
 
 ## Autor
 
-**ozkar-co** 
+**ozkar-co**
+
+---
+
+## Crear Ejecutable para Linux
+
+### Requisitos
+- Python 3.7+
+- pip
+
+### Pasos para crear el ejecutable:
+
+1. **Instalar dependencias:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Ejecutar el script de build:**
+   ```bash
+   chmod +x build_linux.sh
+   ./build_linux.sh
+   ```
+
+3. **O ejecutar PyInstaller manualmente:**
+   ```bash
+   pyinstaller --onefile --windowed --name FabriCalc --add-data "config.json:." main.py
+   ```
+
+### Resultado
+- El ejecutable se creará en la carpeta `dist/`
+- Nombre del archivo: `FabriCalc`
+- Incluye automáticamente el archivo `config.json`
+
+### Notas
+- El ejecutable será específico para la arquitectura donde se compile
+- Para distribuir, compila en el mismo tipo de sistema donde se usará
+- El archivo resultante será independiente (no requiere Python instalado) 
