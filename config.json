@@ -1,0 +1,14 @@
+{
+  "materiales": {
+    "PLA Wood": 150000,
+    "PETG": 120000,
+    "PLA+": 110000
+  },
+  "electricidad_kwh": 968,
+  "consumo_kw_por_hora": 0.5,
+  "precio_impresora": 1200000,
+  "vida_util_horas": 7000,
+  "envio_local": 6000,
+  "envio_nacional": 12000,
+  "precio_hora_trabajo": 12500
+} 
