@@ -49,7 +49,8 @@ class FabriCalc:
             "envio_local": 6000,
             "envio_nacional": 12000,
             "precio_hora_trabajo": 6471,
-            "factor_desperdicio": 100
+            "factor_desperdicio": 100,
+            "tiempo_calentamiento": 10
         }
         self.save_config()
     
@@ -144,7 +145,7 @@ class FabriCalc:
         self.electricity_cost_label = ttk.Label(self.results_frame, text="Costo electricidad: $0")
         self.electricity_cost_label.pack(anchor='w')
         
-        self.depreciation_cost_label = ttk.Label(self.results_frame, text="Depreciación máquina: $0")
+        self.depreciation_cost_label = ttk.Label(self.results_frame, text="Uso de la máquina: $0")
         self.depreciation_cost_label.pack(anchor='w')
         
         self.labor_cost_label = ttk.Label(self.results_frame, text="Costo trabajo: $0")
@@ -260,6 +261,12 @@ class FabriCalc:
         waste_factor_entry = ttk.Entry(settings_frame, textvariable=self.waste_factor_var)
         waste_factor_entry.grid(row=7, column=1, sticky='ew', padx=5, pady=2)
         
+        # Warmup time
+        ttk.Label(settings_frame, text="Tiempo calentamiento (minutos):").grid(row=8, column=0, sticky='w', pady=2)
+        self.warmup_time_var = tk.StringVar(value=str(self.config["tiempo_calentamiento"]))
+        warmup_time_entry = ttk.Entry(settings_frame, textvariable=self.warmup_time_var)
+        warmup_time_entry.grid(row=8, column=1, sticky='ew', padx=5, pady=2)
+        
         # Configure grid weights
         settings_frame.columnconfigure(1, weight=1)
         
@@ -321,6 +328,7 @@ class FabriCalc:
             self.config["envio_nacional"] = float(self.national_shipping_var.get())
             self.config["precio_hora_trabajo"] = float(self.labor_price_var.get())
             self.config["factor_desperdicio"] = float(self.waste_factor_var.get())
+            self.config["tiempo_calentamiento"] = float(self.warmup_time_var.get())
             
             self.save_config()
             self.refresh_materials()
@@ -348,6 +356,10 @@ class FabriCalc:
             print_minutes = float(self.print_minutes_var.get())
             print_time = print_hours + (print_minutes / 60)
             
+            # Add warmup time
+            warmup_time = self.config["tiempo_calentamiento"] / 60  # Convert to hours
+            total_print_time = print_time + warmup_time
+            
             shipping_type = self.shipping_var.get()
             profit_percent = float(self.profit_var.get()) / 100
             post_time = float(self.post_time_var.get()) / 60  # Convert to hours
@@ -355,8 +367,8 @@ class FabriCalc:
             # Calculate costs
             waste_factor = 1 + (self.config["factor_desperdicio"] / 100)
             material_cost = weight * waste_factor * self.config["materiales"][material]
-            electricity_cost = print_time * self.config["consumo_kw_por_hora"] * self.config["electricidad_kwh"]
-            depreciation_cost = (print_time / self.config["vida_util_horas"]) * self.config["precio_impresora"]
+            electricity_cost = total_print_time * self.config["consumo_kw_por_hora"] * self.config["electricidad_kwh"]
+            depreciation_cost = (total_print_time / self.config["vida_util_horas"]) * self.config["precio_impresora"]
             labor_cost = ((print_time/2) + post_time) * self.config["precio_hora_trabajo"]
             
             # Shipping cost
