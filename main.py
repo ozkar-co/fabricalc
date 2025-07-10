@@ -40,7 +40,7 @@ class FabriCalc:
             "materiales": {
                 "PLA Wood": 150000,
                 "PETG": 120000,
-                "PLA+": 110000
+                "PLA+": 90000
             },
             "electricidad_kwh": 968,
             "consumo_kw_por_hora": 0.5,
@@ -48,7 +48,8 @@ class FabriCalc:
             "vida_util_horas": 7000,
             "envio_local": 6000,
             "envio_nacional": 12000,
-            "precio_hora_trabajo": 12500
+            "precio_hora_trabajo": 6471,
+            "factor_desperdicio": 100
         }
         self.save_config()
     
@@ -84,7 +85,7 @@ class FabriCalc:
         
         # Weight input
         ttk.Label(input_frame, text="Peso (gramos):").grid(row=1, column=0, sticky='w', pady=2)
-        self.weight_var = tk.StringVar()
+        self.weight_var = tk.StringVar(value="10")
         weight_entry = ttk.Entry(input_frame, textvariable=self.weight_var)
         weight_entry.grid(row=1, column=1, sticky='ew', padx=5, pady=2)
         
@@ -120,7 +121,7 @@ class FabriCalc:
         
         # Post-processing time
         ttk.Label(input_frame, text="Post-procesado (minutos):").grid(row=5, column=0, sticky='w', pady=2)
-        self.post_time_var = tk.StringVar(value="20")
+        self.post_time_var = tk.StringVar(value="60")
         post_time_entry = ttk.Entry(input_frame, textvariable=self.post_time_var)
         post_time_entry.grid(row=5, column=1, sticky='ew', padx=5, pady=2)
         
@@ -253,13 +254,26 @@ class FabriCalc:
         labor_price_entry = ttk.Entry(settings_frame, textvariable=self.labor_price_var)
         labor_price_entry.grid(row=6, column=1, sticky='ew', padx=5, pady=2)
         
+        # Waste factor
+        ttk.Label(settings_frame, text="Factor desperdicio (%):").grid(row=7, column=0, sticky='w', pady=2)
+        self.waste_factor_var = tk.StringVar(value=str(self.config["factor_desperdicio"]))
+        waste_factor_entry = ttk.Entry(settings_frame, textvariable=self.waste_factor_var)
+        waste_factor_entry.grid(row=7, column=1, sticky='ew', padx=5, pady=2)
+        
         # Configure grid weights
         settings_frame.columnconfigure(1, weight=1)
         
-        # Save button
-        save_button = ttk.Button(scrollable_frame, text="Guardar Configuración", 
+        # Save and Reset buttons
+        button_frame = ttk.Frame(scrollable_frame)
+        button_frame.pack(pady=10)
+        
+        save_button = ttk.Button(button_frame, text="Guardar Configuración", 
                                 command=self.save_configuration)
-        save_button.pack(pady=10)
+        save_button.pack(side='left', padx=(0,10))
+        
+        reset_button = ttk.Button(button_frame, text="Reiniciar Valores", 
+                                 command=self.reset_configuration)
+        reset_button.pack(side='left')
         
         # Pack canvas and scrollbar
         canvas.pack(side="left", fill="both", expand=True)
@@ -306,12 +320,21 @@ class FabriCalc:
             self.config["envio_local"] = float(self.local_shipping_var.get())
             self.config["envio_nacional"] = float(self.national_shipping_var.get())
             self.config["precio_hora_trabajo"] = float(self.labor_price_var.get())
+            self.config["factor_desperdicio"] = float(self.waste_factor_var.get())
             
             self.save_config()
             self.refresh_materials()
             messagebox.showinfo("Éxito", "Configuración guardada correctamente")
         except ValueError as e:
             messagebox.showerror("Error", f"Error en los datos: {e}")
+    
+    def reset_configuration(self):
+        """Reset configuration to default values"""
+        if messagebox.askyesno("Confirmar", "¿Estás seguro de que quieres reiniciar todos los valores a los predeterminados?"):
+            self.create_default_config()
+            self.load_config()
+            self.refresh_materials()
+            messagebox.showinfo("Éxito", "Valores reiniciados correctamente")
     
     def calculate_price(self):
         """Calculate the final price"""
@@ -330,10 +353,11 @@ class FabriCalc:
             post_time = float(self.post_time_var.get()) / 60  # Convert to hours
             
             # Calculate costs
-            material_cost = weight * self.config["materiales"][material]
+            waste_factor = 1 + (self.config["factor_desperdicio"] / 100)
+            material_cost = weight * waste_factor * self.config["materiales"][material]
             electricity_cost = print_time * self.config["consumo_kw_por_hora"] * self.config["electricidad_kwh"]
             depreciation_cost = (print_time / self.config["vida_util_horas"]) * self.config["precio_impresora"]
-            labor_cost = (print_time + post_time) * self.config["precio_hora_trabajo"]
+            labor_cost = ((print_time/2) + post_time) * self.config["precio_hora_trabajo"]
             
             # Shipping cost
             if shipping_type == "Personal":
@@ -352,7 +376,7 @@ class FabriCalc:
             # Update labels
             self.material_cost_label.config(text=f"Costo material: ${material_cost:,.0f}")
             self.electricity_cost_label.config(text=f"Costo electricidad: ${electricity_cost:,.0f}")
-            self.depreciation_cost_label.config(text=f"Depreciación máquina: ${depreciation_cost:,.0f}")
+            self.depreciation_cost_label.config(text=f"Uso de la máquina: ${depreciation_cost:,.0f}")
             self.labor_cost_label.config(text=f"Costo trabajo: ${labor_cost:,.0f}")
             self.shipping_cost_label.config(text=f"Costo envío: ${shipping_cost:,.0f}")
             self.total_cost_label.config(text=f"Costo total: ${total_cost:,.0f}")
