@@ -8,7 +8,7 @@ class FabriCalc:
     def __init__(self, root):
         self.root = root
         self.root.title("FabriCalc - Calculadora de Costos 3D")
-        self.root.geometry("800x600")
+        self.root.geometry("650x700")
         
         # Load configuration
         self.config_file = "config.json"
@@ -185,6 +185,14 @@ class FabriCalc:
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         
+        # Make the scrollable frame expand to fill the canvas width
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+            # Update the width of the scrollable frame to match canvas
+            canvas.itemconfig(canvas.find_withtag("all")[0], width=canvas.winfo_width())
+        
+        canvas.bind('<Configure>', on_frame_configure)
+        
         # Materials section
         materials_frame = ttk.LabelFrame(scrollable_frame, text="Materiales (COP/kg)", padding=10)
         materials_frame.pack(fill='x', padx=10, pady=5)
@@ -285,6 +293,9 @@ class FabriCalc:
         # Pack canvas and scrollbar
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+        
+        # Configure canvas to expand properly
+        canvas.configure(scrollregion=canvas.bbox("all"))
     
     def add_material(self):
         """Add a new material to the configuration"""
