@@ -188,6 +188,9 @@ class FabriCalc:
                                          font=('Arial', 12, 'bold'))
         self.total_cost_label.pack(anchor='w', pady=(10,0))
         
+        self.profit_label = ttk.Label(self.results_frame, text="Ganancia: $0")
+        self.profit_label.pack(anchor='w', pady=(2,0))
+        
         self.final_price_label = ttk.Label(self.results_frame, text="Precio final: $0", 
                                           font=('Arial', 14, 'bold'))
         self.final_price_label.pack(anchor='w')
@@ -442,6 +445,9 @@ class FabriCalc:
             # Final price using margin formula: Price = Cost / (1 - Percentage)
             final_price = total_cost / (1 - profit_percent)
             
+            # Calculate profit amount
+            profit_amount = final_price - total_cost
+            
             # Update labels
             self.material_cost_label.config(text=f"Costo material: ${material_cost:,.0f}")
             self.electricity_cost_label.config(text=f"Costo electricidad: ${electricity_cost:,.0f}")
@@ -451,6 +457,7 @@ class FabriCalc:
             self.fixed_cost_label.config(text=f"Costo fijo: ${fixed_cost:,.0f}")
             self.shipping_cost_label.config(text=f"Costo envío: ${shipping_cost:,.0f}")
             self.total_cost_label.config(text=f"Costo total: ${total_cost:,.0f}")
+            self.profit_label.config(text=f"Ganancia: ${profit_amount:,.0f}")
             self.final_price_label.config(text=f"Precio final: ${final_price:,.0f}")
             
         except ValueError as e:
