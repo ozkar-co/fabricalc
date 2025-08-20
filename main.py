@@ -1,7 +1,8 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import json
 import os
+import re
 from typing import Dict, Any
 
 class FabriCalc:
@@ -51,7 +52,8 @@ class FabriCalc:
             "precio_hora_trabajo": 6471,
             "factor_desperdicio": 100,
             "tiempo_calentamiento": 10,
-            "costo_fijo": 2000
+            "costo_fijo": 2000,
+            "ultima_carpeta_gcode": ""
         }
         self.save_config()
     
@@ -153,10 +155,17 @@ class FabriCalc:
         # Configure grid weights
         input_frame.columnconfigure(1, weight=1)
         
-        # Calculate button
-        calc_button = ttk.Button(calculator_frame, text="Calcular Precio", 
+        # Calculate and Read G-code buttons
+        button_frame = ttk.Frame(calculator_frame)
+        button_frame.pack(pady=10)
+        
+        read_gcode_button = ttk.Button(button_frame, text="Leer G-CODE", 
+                                      command=self.read_gcode_file)
+        read_gcode_button.pack(side='left', padx=(0,10))
+        
+        calc_button = ttk.Button(button_frame, text="Calcular Precio", 
                                 command=self.calculate_price)
-        calc_button.pack(pady=10)
+        calc_button.pack(side='left')
         
         # Results frame
         self.results_frame = ttk.LabelFrame(calculator_frame, text="Resultados", padding=10)
@@ -464,6 +473,75 @@ class FabriCalc:
             messagebox.showerror("Error", "Por favor verifica que todos los campos numéricos sean válidos")
         except KeyError:
             messagebox.showerror("Error", "Material no encontrado en la configuración")
+    
+    def read_gcode_file(self):
+        """Read G-code file and extract filament usage and time"""
+        try:
+            # Get last used folder from config
+            initial_dir = self.config.get("ultima_carpeta_gcode", "")
+            
+            # Open file dialog to select G-code file
+            filename = filedialog.askopenfilename(
+                title="Seleccionar archivo G-CODE",
+                initialdir=initial_dir,
+                filetypes=[("G-code files", "*.gcode"), ("All files", "*.*")]
+            )
+            
+            if not filename:
+                return  # User cancelled
+            
+            # Read first 10 lines of the file
+            with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = [f.readline().strip() for _ in range(10)]
+            
+            # Extract TIME and Filament used
+            time_seconds = None
+            filament_meters = None
+            
+            for line in lines:
+                # Extract time (convert to hours and minutes)
+                time_match = re.search(r';TIME:(\d+)', line)
+                if time_match:
+                    time_seconds = int(time_match.group(1))
+                
+                # Extract filament used
+                filament_match = re.search(r';Filament used:\s*([\d.]+)m', line)
+                if filament_match:
+                    filament_meters = float(filament_match.group(1))
+            
+            if time_seconds is None or filament_meters is None:
+                messagebox.showwarning("Advertencia", 
+                    "No se pudieron extraer los datos de tiempo o filamento del archivo G-CODE.\n"
+                    "Asegúrate de que el archivo contenga las líneas ';TIME:' y ';Filament used:'")
+                return
+            
+            # Convert time from seconds to hours and minutes
+            hours = time_seconds // 3600
+            minutes = (time_seconds % 3600) // 60
+            
+            # Convert filament from meters to grams
+            # Assuming 330m per kg for 1.75mm filament
+            filament_grams = (filament_meters / 330) * 1000
+            
+            # Update the input fields
+            self.print_hours_var.set(str(hours))
+            self.print_minutes_var.set(str(minutes))
+            self.weight_var.set(f"{filament_grams:.1f}")
+            
+            # Save the folder path for next time
+            folder_path = os.path.dirname(filename)
+            self.config["ultima_carpeta_gcode"] = folder_path
+            self.save_config()
+            
+            # Calculate price directly with the new values
+            self.calculate_price()
+            
+        except FileNotFoundError:
+            messagebox.showerror("Error", "Archivo no encontrado")
+        except PermissionError:
+            messagebox.showerror("Error", "No tienes permisos para leer este archivo")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al leer el archivo: {str(e)}")
 
 def main():
     root = tk.Tk()

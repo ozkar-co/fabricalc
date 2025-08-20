@@ -13,5 +13,6 @@
   "precio_hora_trabajo": 6741.0,
   "factor_desperdicio": 100.0,
   "tiempo_calentamiento": 10.0,
+  "ultima_carpeta_gcode": "/home/oz/Documents/3D/G-Code",
   "costo_fijo": 2000.0
 }
