@@ -50,7 +50,8 @@ class FabriCalc:
             "envio_nacional": 12000,
             "precio_hora_trabajo": 6471,
             "factor_desperdicio": 100,
-            "tiempo_calentamiento": 10
+            "tiempo_calentamiento": 10,
+            "costo_fijo": 2000
         }
         self.save_config()
     
@@ -61,6 +62,26 @@ class FabriCalc:
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
         except Exception as e:
             messagebox.showerror("Error", f"Error al guardar config.json: {e}")
+    
+    def create_tooltip(self, widget, text):
+        """Create a tooltip for a given widget"""
+        def show_tooltip(event):
+            tooltip = tk.Toplevel()
+            tooltip.wm_overrideredirect(True)
+            tooltip.wm_geometry(f"+{event.x_root+10}+{event.y_root+10}")
+            
+            label = tk.Label(tooltip, text=text, justify='left',
+                           background="#ffffe0", relief='solid', borderwidth=1,
+                           font=("Arial", "8", "normal"))
+            label.pack()
+            
+            def hide_tooltip(event):
+                tooltip.destroy()
+            
+            widget.bind('<Leave>', hide_tooltip)
+            tooltip.bind('<Leave>', hide_tooltip)
+        
+        widget.bind('<Enter>', show_tooltip)
     
     def create_calculator_tab(self):
         """Create the calculator tab"""
@@ -96,7 +117,7 @@ class FabriCalc:
         time_frame = ttk.Frame(input_frame)
         time_frame.grid(row=2, column=1, sticky='ew', padx=5, pady=2)
         
-        self.print_hours_var = tk.StringVar(value="0")
+        self.print_hours_var = tk.StringVar(value="1")
         self.print_minutes_var = tk.StringVar(value="0")
         
         ttk.Label(time_frame, text="Horas:").pack(side='left')
@@ -115,14 +136,17 @@ class FabriCalc:
         shipping_combo.grid(row=3, column=1, sticky='ew', padx=5, pady=2)
         
         # Profit percentage
-        ttk.Label(input_frame, text="Ganancia (%):").grid(row=4, column=0, sticky='w', pady=2)
-        self.profit_var = tk.StringVar(value="40")
+        ttk.Label(input_frame, text="Margen de utilidad (%):").grid(row=4, column=0, sticky='w', pady=2)
+        self.profit_var = tk.StringVar(value="30")
         profit_entry = ttk.Entry(input_frame, textvariable=self.profit_var)
         profit_entry.grid(row=4, column=1, sticky='ew', padx=5, pady=2)
         
+        # Add tooltip for profit percentage
+        self.create_tooltip(profit_entry, "Recomendaciones:\n• Impresiones pequeñas: 50%\n• Impresiones medianas: 30%\n• Impresiones grandes: 15%")
+        
         # Post-processing time
         ttk.Label(input_frame, text="Post-procesado (minutos):").grid(row=5, column=0, sticky='w', pady=2)
-        self.post_time_var = tk.StringVar(value="60")
+        self.post_time_var = tk.StringVar(value="30")
         post_time_entry = ttk.Entry(input_frame, textvariable=self.post_time_var)
         post_time_entry.grid(row=5, column=1, sticky='ew', padx=5, pady=2)
         
@@ -145,11 +169,17 @@ class FabriCalc:
         self.electricity_cost_label = ttk.Label(self.results_frame, text="Costo electricidad: $0")
         self.electricity_cost_label.pack(anchor='w')
         
-        self.depreciation_cost_label = ttk.Label(self.results_frame, text="Uso de la máquina: $0")
+        self.depreciation_cost_label = ttk.Label(self.results_frame, text="Depreciación de la máquina: $0")
         self.depreciation_cost_label.pack(anchor='w')
         
-        self.labor_cost_label = ttk.Label(self.results_frame, text="Costo trabajo: $0")
-        self.labor_cost_label.pack(anchor='w')
+        self.machine_operation_label = ttk.Label(self.results_frame, text="Operación máquina: $0")
+        self.machine_operation_label.pack(anchor='w')
+        
+        self.post_processing_label = ttk.Label(self.results_frame, text="Post-procesado: $0")
+        self.post_processing_label.pack(anchor='w')
+        
+        self.fixed_cost_label = ttk.Label(self.results_frame, text="Costo fijo: $0")
+        self.fixed_cost_label.pack(anchor='w')
         
         self.shipping_cost_label = ttk.Label(self.results_frame, text="Costo envío: $0")
         self.shipping_cost_label.pack(anchor='w')
@@ -275,6 +305,12 @@ class FabriCalc:
         warmup_time_entry = ttk.Entry(settings_frame, textvariable=self.warmup_time_var)
         warmup_time_entry.grid(row=8, column=1, sticky='ew', padx=5, pady=2)
         
+        # Fixed cost
+        ttk.Label(settings_frame, text="Costo fijo (COP):").grid(row=9, column=0, sticky='w', pady=2)
+        self.fixed_cost_var = tk.StringVar(value=str(self.config.get("costo_fijo", 2000)))
+        fixed_cost_entry = ttk.Entry(settings_frame, textvariable=self.fixed_cost_var)
+        fixed_cost_entry.grid(row=9, column=1, sticky='ew', padx=5, pady=2)
+        
         # Configure grid weights
         settings_frame.columnconfigure(1, weight=1)
         
@@ -340,6 +376,7 @@ class FabriCalc:
             self.config["precio_hora_trabajo"] = float(self.labor_price_var.get())
             self.config["factor_desperdicio"] = float(self.waste_factor_var.get())
             self.config["tiempo_calentamiento"] = float(self.warmup_time_var.get())
+            self.config["costo_fijo"] = float(self.fixed_cost_var.get())
             
             self.save_config()
             self.refresh_materials()
@@ -380,7 +417,15 @@ class FabriCalc:
             material_cost = weight * waste_factor * self.config["materiales"][material]
             electricity_cost = total_print_time * self.config["consumo_kw_por_hora"] * self.config["electricidad_kwh"]
             depreciation_cost = (total_print_time / self.config["vida_util_horas"]) * self.config["precio_impresora"]
-            labor_cost = ((print_time/4) + post_time) * self.config["precio_hora_trabajo"]
+            
+            # Machine operation cost (25% of hourly rate for print time supervision)
+            machine_operation_cost = print_time * self.config["precio_hora_trabajo"] * 0.25
+            
+            # Post-processing cost (full hourly rate)
+            post_processing_cost = post_time * self.config["precio_hora_trabajo"]
+            
+            # Fixed cost
+            fixed_cost = self.config["costo_fijo"]
             
             # Shipping cost
             if shipping_type == "Personal":
@@ -391,16 +436,19 @@ class FabriCalc:
                 shipping_cost = self.config["envio_nacional"]
             
             # Total cost
-            total_cost = material_cost + electricity_cost + depreciation_cost + labor_cost + shipping_cost
+            total_cost = (material_cost + electricity_cost + depreciation_cost + 
+                         machine_operation_cost + post_processing_cost + fixed_cost + shipping_cost)
             
-            # Final price with profit
-            final_price = total_cost * (1 + profit_percent)
+            # Final price using margin formula: Price = Cost / (1 - Percentage)
+            final_price = total_cost / (1 - profit_percent)
             
             # Update labels
             self.material_cost_label.config(text=f"Costo material: ${material_cost:,.0f}")
             self.electricity_cost_label.config(text=f"Costo electricidad: ${electricity_cost:,.0f}")
-            self.depreciation_cost_label.config(text=f"Uso de la máquina: ${depreciation_cost:,.0f}")
-            self.labor_cost_label.config(text=f"Costo trabajo: ${labor_cost:,.0f}")
+            self.depreciation_cost_label.config(text=f"Depreciación de la máquina: ${depreciation_cost:,.0f}")
+            self.machine_operation_label.config(text=f"Operación máquina: ${machine_operation_cost:,.0f}")
+            self.post_processing_label.config(text=f"Post-procesado: ${post_processing_cost:,.0f}")
+            self.fixed_cost_label.config(text=f"Costo fijo: ${fixed_cost:,.0f}")
             self.shipping_cost_label.config(text=f"Costo envío: ${shipping_cost:,.0f}")
             self.total_cost_label.config(text=f"Costo total: ${total_cost:,.0f}")
             self.final_price_label.config(text=f"Precio final: ${final_price:,.0f}")

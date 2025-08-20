@@ -40,7 +40,8 @@ Edita el archivo `config.json` para ajustar tus valores:
   "envio_nacional": 12000,
   "precio_hora_trabajo": 6471,
   "factor_desperdicio": 100,
-  "tiempo_calentamiento": 10
+  "tiempo_calentamiento": 10,
+  "costo_fijo": 2000
 }
 ```
 
@@ -56,6 +57,7 @@ Edita el archivo `config.json` para ajustar tus valores:
 - **precio_hora_trabajo**: Tarifa por hora de trabajo en COP
 - **factor_desperdicio**: Porcentaje de desperdicio de material para cubrir posibles reimpresiones o fallos
 - **tiempo_calentamiento**: Tiempo de calentamiento aproximado en minutos
+- **costo_fijo**: Costo fijo por impresión en COP (gastos administrativos, etc.)
 
 ---
 
@@ -63,13 +65,13 @@ Edita el archivo `config.json` para ajustar tus valores:
 
 - **Material**: Selecciona el tipo de material desde la lista disponible
 - **Peso de la pieza**: Peso del objeto en gramos (por defecto: 10g)
-- **Tiempo de impresión**: Duración de la impresión en horas y minutos
+- **Tiempo de impresión**: Duración de la impresión en horas y minutos (por defecto: 1 hora)
 - **Tipo de envío**: 
   - Personal (sin costo)
   - Local (costo configurable)
   - Nacional (costo configurable)
-- **Porcentaje de ganancia**: Por defecto 40%
-- **Tiempo de postprocesado**: Por defecto 60 minutos
+- **Margen de utilidad**: Porcentaje de margen sobre el precio final (por defecto: 20%)
+- **Tiempo de post-procesado**: Tiempo de trabajo manual (por defecto: 30 minutos)
 
 ## Uso
 
@@ -77,8 +79,8 @@ Edita el archivo `config.json` para ajustar tus valores:
 2. Introduce el peso del objeto (en gramos).
 3. Introduce el tiempo de impresión (en horas y minutos).
 4. Selecciona el tipo de envío (personal, local o nacional).
-5. Ajusta el porcentaje de ganancia deseado (por defecto 40%).
-6. Configura el tiempo de postprocesado (por defecto 60 minutos).
+5. Ajusta el margen de utilidad deseado (por defecto 20%).
+6. Configura el tiempo de post-procesado (por defecto 30 minutos).
 7. Visualiza el costo total y el precio final sugerido.
 
 ---
@@ -106,23 +108,41 @@ Costo Máquina = (Tiempo Total / Vida Útil) × Precio Impresora
 - Considera la depreciación basada en el uso real de la máquina
 - Incluye tiempo de calentamiento en el cálculo
 
-### 4. **Costo de Trabajo**
+### 4. **Operación de la Máquina**
 ```
-Costo Trabajo = ((Tiempo Impresión / 4) + Tiempo Post-procesado) × Tarifa Hora
+Costo Operación = Tiempo Impresión × Tarifa Hora × 0.25
 ```
-- **Tiempo Impresión / 4**: Se divide entre 4 porque no se está pendiente todo el tiempo de la impresión, solo se supervisa por ratos
-- **Tiempo Post-procesado**: Tiempo completo de trabajo manual (limpieza, acabados, etc.)
+- **Tiempo Impresión**: Se maneja un 25% del precio que representa el tiempo parcial de supervisión durante la impresión.
 
-### 5. **Costo de Envío**
+### 5. **Post-Procesado**
+```
+Costo Post-Procesado = Tiempo Post-Procesado × Tarifa Hora
+```
+- **Tiempo Post-Procesado**: Tiempo completo de trabajo manual (limpieza, acabados, etc.)
+- Se aplica la tarifa completa por hora de trabajo.
+
+### 6. **Costo Fijo**
+```
+Costo Fijo = Valor Configurado
+```
+- Costo fijo por impresión independiente del tamaño o tiempo.
+
+### 7. **Costo de Envío**
 - **Personal**: $0
 - **Local**: Costo configurado
 - **Nacional**: Costo configurado
 
-### 6. **Precio Final**
+### 8. **Precio Final**
 ```
-Precio Final = Costo Total × (1 + Porcentaje Ganancia)
+Precio Final = Costo Total / (1 - Margen Utilidad)
 ```
 - **Costo Total**: Suma de todos los costos anteriores
+- **Margen de Utilidad**: Porcentaje sobre el precio final (no sobre el costo)
+
+### Recomendaciones de Margen de Utilidad
+- **Impresiones pequeñas**: 50%
+- **Impresiones medianas**: 30%
+- **Impresiones grandes**: 15%
 
 ---
 

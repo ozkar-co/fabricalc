@@ -12,5 +12,6 @@
   "envio_nacional": 12000.0,
   "precio_hora_trabajo": 6741.0,
   "factor_desperdicio": 100.0,
-  "tiempo_calentamiento": 10.0
+  "tiempo_calentamiento": 10.0,
+  "costo_fijo": 2000.0
 }
