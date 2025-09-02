@@ -2,7 +2,8 @@
   "materiales": {
     "PLA Wood": 150000.0,
     "PETG": 120000.0,
-    "PLA+": 90000.0
+    "PLA+": 90000.0,
+    "ABS": 85000.0
   },
   "electricidad_kwh": 968.0,
   "consumo_kw_por_hora": 0.5,

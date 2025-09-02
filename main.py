@@ -359,6 +359,7 @@ class FabriCalc:
             self.config["materiales"][material] = price_float
             self.save_config()
             self.refresh_materials()
+            self.refresh_config_tab()  # Actualizar la interfaz de configuración
             self.new_material_var.set("")
             self.new_price_var.set("")
             messagebox.showinfo("Éxito", f"Material '{material}' agregado")
@@ -370,6 +371,73 @@ class FabriCalc:
         self.material_combo['values'] = list(self.config["materiales"].keys())
         if self.material_combo.get() not in self.config["materiales"]:
             self.material_combo.set(list(self.config["materiales"].keys())[0])
+    
+    def refresh_config_tab(self):
+        """Refresh the configuration tab to show new materials"""
+        # Find the materials frame in the configuration tab
+        for child in self.notebook.winfo_children():
+            if isinstance(child, ttk.Frame):
+                # Look for the materials frame within the scrollable frame
+                for grandchild in child.winfo_children():
+                    if isinstance(grandchild, tk.Canvas):
+                        # Get the scrollable frame from the canvas
+                        scrollable_frame = None
+                        for canvas_child in grandchild.winfo_children():
+                            if isinstance(canvas_child, ttk.Frame):
+                                scrollable_frame = canvas_child
+                                break
+                        
+                        if scrollable_frame:
+                            # Find the materials frame and update it
+                            self.update_materials_frame(scrollable_frame)
+                            break
+    
+    def update_materials_frame(self, scrollable_frame):
+        """Update the materials frame with current materials"""
+        # Find the materials frame
+        materials_frame = None
+        for child in scrollable_frame.winfo_children():
+            if isinstance(child, ttk.LabelFrame) and "Materiales" in child.cget("text"):
+                materials_frame = child
+                break
+        
+        if not materials_frame:
+            return
+        
+        # Store the "add new material" widgets before clearing
+        add_widgets = []
+        for widget in materials_frame.winfo_children():
+            if "Nuevo material" in widget.cget("text") or "Precio:" in widget.cget("text") or "Agregar Material" in widget.cget("text"):
+                add_widgets.append(widget)
+        
+        # Clear all existing material entries
+        for widget in materials_frame.winfo_children():
+            widget.destroy()
+        
+        # Recreate material entries
+        self.material_entries = {}
+        for i, (material, price) in enumerate(self.config["materiales"].items()):
+            ttk.Label(materials_frame, text=f"{material}:").grid(row=i, column=0, sticky='w', pady=2)
+            var = tk.StringVar(value=str(price))
+            entry = ttk.Entry(materials_frame, textvariable=var, width=15)
+            entry.grid(row=i, column=1, padx=5, pady=2)
+            self.material_entries[material] = var
+        
+        # Recreate the "add new material" section at the bottom
+        new_material_row = len(self.config["materiales"])
+        
+        # Recreate the add new material widgets
+        ttk.Label(materials_frame, text="Nuevo material:").grid(row=new_material_row, column=0, sticky='w', pady=2)
+        new_material_entry = ttk.Entry(materials_frame, textvariable=self.new_material_var, width=15)
+        new_material_entry.grid(row=new_material_row, column=1, padx=5, pady=2)
+        
+        ttk.Label(materials_frame, text="Precio:").grid(row=new_material_row, column=2, sticky='w', pady=2)
+        new_price_entry = ttk.Entry(materials_frame, textvariable=self.new_price_var, width=15)
+        new_price_entry.grid(row=new_material_row, column=3, padx=5, pady=2)
+        
+        add_button = ttk.Button(materials_frame, text="Agregar Material", 
+                               command=self.add_material)
+        add_button.grid(row=new_material_row, column=4, padx=5, pady=2)
     
     def save_configuration(self):
         """Save all configuration changes"""
